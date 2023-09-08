@@ -43,20 +43,29 @@ function verifyToken(req, res, next) {
   }
 
 
-app.post('/api/register', (req, res) => {
+  app.post('/api/register', (req, res) => {
 
     const username = req.body.username; 
     const password = req.body.password;
 
-    bcrypt.hash(password, saltRounds, (err, hash) => {
-        db.query("INSERT INTO users (username, password) VALUES (?, ?);", [username, hash], (err, result) => {
-            console.log(result);
-            if(result){
-                res.send({ message: "User registered!", status: "true" });
-            } else{
-                res.send({ message: "Username already taken", status: "false" });
-            }
-        });
+    db.query('SELECT * FROM users WHERE username = ?', [username], (error, success) => {
+        if(error) {
+            console.error('Database query error:', err);
+            res.status(500).json({ error: 'Database query error' });
+        } else if (success.length > 0) {
+            res.json({ message: 'Username already taken', status: false });
+          } else {
+            bcrypt.hash(password, saltRounds, (err, hash) => {
+                db.query("INSERT INTO users (username, password) VALUES (?, ?);", [username, hash], (err, result) => {
+                
+                    if(result){
+                        res.send({ message: "User registered!", status: "true" });
+                    } else{
+                        res.send({ message: "Username already taken", status: "false" });
+                    }
+                });
+            });
+          }
     });
 });
 
